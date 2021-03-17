@@ -1,7 +1,7 @@
 ---
-title: "covid 19"
-author: "Dr K"
-date: "5/2/2020"
+title: "Covid 19"
+author: "Anjolie"
+date: "3/17/2021"
 output:
   html_document: default
   pdf_document: default
@@ -13,19 +13,23 @@ options(digits=2)
 require(tidyverse)
 require(tigerstats)
 require(lubridate)
-kRdata <- read.csv(file = 'kRdata.csv')
+require(dplyr)
+require(ggplot2)
+kRdata <- read_csv("kRdata.csv", col_types = cols(sex = col_skip(), Sex = col_factor(levels = c("M", "F")), result = col_factor(levels = c("alive", "dead"))))
 ```
 ### Data is from the Patient_Info dataset from South Korea 1 Jan to 1 May 
 ### This is contained in a downloadable zip file from kaggle
 
 Some of the data was uncoded for sex - sex must be just male or female
 77 of the data entries were coded sex  as blank, so we omit these.
-state of a patient must be died or alive - we adjust that as well   
+state of a patient must be died or alive - we adjust that as well  
+
+We are using Cat~Cat to do variable analysis, since both "Sex" and "result" are categorical (or factor) variables with "M" & "F" and "alive" & "dead" possibilities respectively. We will compare both the percentage and count results (in graphical and numerical form) of all 4 combinations of these variables (as they can form a 2 by 2 table). This table will also be used to do the chi- square and fischer inferential tests to ensure the findings are actually significant (and not up to chance).  
   
 # Question 1 - Is dying independent of sex
 
-
-
+$H_A$: Dying is affected by sex. 
+$H_0$: Dying is independent of sex. 
 
 Table of patients:
 ```{r}
@@ -38,14 +42,23 @@ with(kRdata, table(Sex, result))
 
 ## We create two bar charts - one based on frequency and the other on percent, use ggplot commands to do this
 
-`
+```{r}
+sexResult <- kRdata %>%
+group_by(result,Sex) %>%
+summarize(count=n()) %>% 
+mutate(prcnt=count/sum(count))
 
-  
+# the group_by followed by summarize(count=n())
 
+basicC <- ggplot(sexResult,aes(x=result,y=count,fill=Sex))
+basicC + geom_bar(stat="identity",position="dodge")
 
+#Now for percentage plot
 
-
-
+basicCC <- ggplot(sexResult,aes(x=result,y=prcnt*100,fill=Sex)) 
+basicCC + geom_bar(stat="identity", position = "dodge")
+```  
+Most of the participants survived, but females survived more often than males.  
   
 ## Numerical results
 
