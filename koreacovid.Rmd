@@ -252,6 +252,6 @@ fisherXY(kRdata$age, kRdata$Sex)
 All of the p-values are under 0.05 and most of the odds ratios have a lower bound greater than 1, which is promising. However, the 0s-60s, 20s-70s, and 30s-90s comparisons have lower bounds at 0.99 and 1, suggesting those age groups have the evenest sex distributions.  
 The 0s-80s, 0-90s, 10s-80s, and 10s-90s have most significant differences with odds ratios at 2.7 or higher. This is because the 80s and 90s age groups have around twice as many females than males. There is a correlation between being female and growing old, but this correlation isn't as significant when comparing cases that are less than 70 years apart.  
 
-## Conclusions
+## Conclusions  
 
 The null hypothesis is that sex and results have no correlation, but the alternate hypothesis is that sex has a correlation with results. The alternate hypothesis is confirmed. Being female is correlated with surviving and being older for unknown reasons (possibly because workplace injury, depression, and other hazards are more common in a population that works - males). Another possibility is the infection being less dangerous to females, again for unknown reasons. Knowing the cases' employment status might be beneficial to pinning down the cause of these correlations.  
