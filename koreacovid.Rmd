@@ -1,10 +1,12 @@
 ---
 title: "Covid 19"
-author: "Anjolie"
+author: "Anjolie Barrios"
 date: "3/17/2021"
 output:
-  html_document: default
+  html_document: 
+  toc: true
   pdf_document: default
+  
 ---
 
 ```{r setup, include=FALSE}
@@ -19,21 +21,34 @@ kRdata <- read_csv("kRdata.csv", col_types = cols(sex = col_skip(), Sex = col_fa
 
 kRdata$age <- as.factor(kRdata$age) 
 kRdata$infection_case <- as.factor(kRdata$infection_case)
-```
-### Data is from the Patient_Info dataset from South Korea 1 Jan to 1 May 
-### This is contained in a downloadable zip file from kaggle
 
-Some of the data was uncoded for sex - sex must be just male or female
-77 of the data entries were coded sex  as blank, so we omit these.
-state of a patient must be died or alive - we adjust that as well  
+efficacy <- function(a,b,c,d){
+  #a = vaccinated infection, b = vaccinated and okay
+  #c = unvaccinated infection, d = unvaccinated but okay
+  ARV <- (a/(a+b))
+  ARU <- (c/(c+d))
+  RR <- (ARV)/ARU
+  efficacy <- (ARU-ARV)/ARU
+  efficacy2 <- (1-RR)
+print(RR)
+return(efficacy)
+}
+```
+# Methods
+
+Some of the data was uncoded for sex - sex must be just male or female. 
+77 of the data entries had sex as blank, so we omit these.
+The state of a patient must be died or alive - we adjust that as well.  
 
 We are using Cat~Cat to do variable analysis, since both "Sex" and "result" are categorical (or factor) variables with "M" & "F" and "alive" & "dead" possibilities respectively. We will compare both the percentage and count results (in graphical and numerical form) of all 4 combinations of these variables (as they can form a 2 by 2 table). This table will also be used to do the chi- square and fischer inferential tests to ensure the findings are actually significant (and not up to chance).  
-We will also be considering age, for thoroughness; comparing age and result makes an 11 by 2 table, but that data will stil be usable.  
+We will also be considering age, for thoroughness; comparing age and result makes an 11 by 2 table, but that data will still be usable.  
   
-# Question 1 - Is dying independent of sex
+# Question 1 - Is dying independent of sex?
 
-$H_A$: Dying is affected by sex. 
-$H_0$: Dying is independent of sex. 
+$H_A$: Dying is affected by sex.  
+$H_0$: Dying is independent of sex.  
+
+# Results 
 
 Table of patients:
 ```{r}
@@ -44,7 +59,7 @@ with(kRdata, table(Sex, result))
 with(kRdata, table(age, result))
 ```
 
-## We create two bar charts - one based on frequency and the other on percent, use ggplot commands to do this
+## Graphical results
 
 ```{r}
 #result vs Sex
@@ -79,44 +94,164 @@ Out of those who survived, those in their 20s to 50s are more common; of those w
 ```{r}
 #Sex vs age
 sexAge <- kRdata %>%
-group_by(Sex,age) %>%
+group_by(age,Sex) %>%
 summarize(count=n()) %>% 
 mutate(prcnt=count/sum(count))
 
-basicC <- ggplot(sexAge,aes(x=Sex,y=count,fill=age))
+basicC <- ggplot(sexAge,aes(x=age,y=count,fill=Sex))
 basicC + geom_bar(stat="identity",position="dodge")
 
-basicCC <- ggplot(sexAge,aes(x=Sex,y=prcnt*100,fill=age)) 
+basicCC <- ggplot(sexAge,aes(x=age,y=prcnt*100,fill=Sex)) 
 basicCC + geom_bar(stat="identity", position = "dodge")
 ```
   
-The females in this sample appear to have been slightly older, disproving my theory that the "Sex vs result" findings were due to males being older. Not significant enough for a chi- squared or Tukey test, though.  
+The females in this sample appear to have been slightly older, disproving my theory that the "Sex vs result" findings were due to males being older. Inferential tests will be done to confirm or deny this.  
+
 ## Numerical results
+
+### Result vs Sex 
+
 ```{r}
 table1 <- xtabs(~result + Sex, data=kRdata)
 rowPerc(table1)
 colPerc(table1)
 ```
   
-]]
+Most patients survived. However, a slightly greater percentage of females survived and almost 2/3 of the patients who died were male.  
+
+### Result vs Age
+
 ```{r}
 table2 <- xtabs(~result + age, data=kRdata)
 rowPerc(table2)
 colPerc(table2)
 ```  
   
-]]
+By proportion pretty much nobody in their 20s or younger had died. Significant amounts of death (more than 10% of total deaths) only happened in the age groups in their 50s and older; age seems mostly positively correlated with death, and the dip starting in the 90s can be explained by 90+ year old patients being very rare. The one 100+ year- old who survived could have even been a fluke.  
+
+### Age vs Sex
+
 ```{r}
 table3 <- xtabs(~age + Sex, data=kRdata)
 rowPerc(table3)
 colPerc(table3)
 ```  
   
-]]
+The ratio of males and females seems to even out in the 20s and 30s categories. Before that, males are more common; after that, females are very common. 2/3 of the patients in their 80s and 90s are females, but males never get such a huge majority.  
+
 ## Inferential results 
 
+### Sex vs Result
 
+```{r}
+chisqtestGC(table1)
+fisher.test(table1)
+```
+The greater amount of male deaths than expected contributed most to the Chi- squared statistic, because it varied most from the table expected by the null hypothesis (which assumed sex and results have no association). Low p-values at 0.0012 and 0.0009 confirm that the null hypothesis is probably false. An odds ratio with an upper bound lower than 1 suggests that sex is a significant variable to determine result.  
+```{r}
+#male to female; a,b= "treated"
+efficacy(44,1411,25,1831)
+#female to male
+efficacy(25,1831,44,1411)
+```
+Efficacy is useless when we don't know whether the cases were vaccinated or not. A risk ratio of 2.2 means males have 2.2 times the risk of dying (compared to females). A risk ratio of 0.45 means females have 0.45 times the risk of dying (compared to males).  
 
+### Results vs Age
+
+```{r}
+chisqtestGC(table2)
+```
+  
+The deaths in the 70s- 80s age group contributed most to the Chi-Squared statistic, meaning that data differentiated the most from the values expected by the null. With such a high Chi- squared value and a p-value of 0, the null (that age and results are independent) is rejected.  
+
+This defines the FischerXY function.    
+```{r}
+fisherXY = function(x, y, confL = 0, printAll=FALSE){
+  # Inputs: 
+  #   x: factor variable, 2 levels
+  #   y: factor variable, n levels
+  # confL: confidence level, default = 0.95
+  #        print only those tables, results if p-value < (1-confL)
+  # printAll: overide the 'print only if p-value < (1-confL), and
+  #           print all tables and fisher test results
+  #
+  # Constraint:
+  #   x and y must be same length
+  #
+  # Outputs:
+  #   All 2x2 Fisher exact tests
+  
+  if(confL<0 || confL> 1){
+    print('error: confL must be between 0 and 1')
+    return(999)
+  }
+  
+  if(!is.factor(x)) x=as.factor(x)
+  if(!is.factor(y)) y=as.factor(y)
+  
+  fisherTable = as.matrix(table(x, y))
+  cat('\ncontingency table:\n')
+  print(fisherTable)
+  cat('\n***All 2X2 tests****\n\n')
+
+  # all 2x2 tests
+  levelsY = levels(y)
+  levelsX = levels(x)
+  
+  m = length(levelsX)
+  n = length(levelsY)
+  
+  confLevel = 0.95
+  if (confL !=0 ) confLevel=confL
+  
+  for (i in 1:(m-1))
+       for(j in ((i+1):m))
+          for (k in 1:(n-1))
+             for (l in ((k+1):n)) {
+                
+                 fisherIndexX = c(i,j)
+                 fisherIndexY = c(k,l)
+                 
+                 fTempTable = as.matrix(fisherTable[fisherIndexX,
+                                        fisherIndexY])
+                 fisherTest=fisher.test(fTempTable, conf.int = TRUE, 
+                              conf.level = confLevel)
+                 
+                 if((fisherTest$p.value < (1-confLevel) ) || printAll){print(c(levelsX[i], levelsX[j]))
+                       print(c(levelsY[k], levelsY[l]))
+                       print(fTempTable)
+                       print(fisherTest)
+                       cat('\n')}}}
+
+```
+
+```{r}
+fisherXY(kRdata$age, kRdata$result)
+```
+  
+There are no odds ratios here that have lower bounds under 1, and 0.02 is the highest p-value. Thus, the null hypothesis (that age and results are independent) can be rejected.  
+```{r}
+#90s to 30s
+efficacy(7,38,1,437)
+#30s to 90s
+efficacy(1,437,7,38)
+```
+  
+The 30s to 90s comparison had the greatest non-infinite odds ratio at 79. A risk ratio of 68 means 90 year olds are 68 times more likely to die than 30 year olds are. Someone in their 30s is 0.015 times as likely to die from Covid-19 as someone in their 90s.  
+
+### Age vs Sex
+```{r}
+chisqtestGC(table3)
+```
+  
+People in their 10s contributed most to the chi- square statistic since the null expected more of them and not for males to be the majority of them. The 30s and 80s age groups had similarly high contributions, but only the 80s had a ~2/3 majority of females. The 30s, on the other hand, subverted expectations by having a relatively equal sex distribution when a female dominance was expected.  
+```{r}
+fisherXY(kRdata$age, kRdata$Sex)
+```
+  
+All of the p-values are under 0.05 and most of the odds ratios have a lower bound greater than 1, which is promising. However, the 0s-60s, 20s-70s, and 30s-90s comparisons have lower bounds at 0.99 and 1, suggesting those age groups have the evenest sex distributions.  
+The 0s-80s, 0-90s, 10s-80s, and 10s-90s have most significant differences with odds ratios at 2.7 or higher. This is because the 80s and 90s age groups have around twice as many females than males. There is a correlation between being female and growing old, but this correlation isn't as significant when comparing cases that are less than 70 years apart.  
 
 ## Conclusions
 
+The null hypothesis is that sex and results have no correlation, but the alternate hypothesis is that sex has a correlation with results. The alternate hypothesis is confirmed. Being female is correlated with surviving and being older for unknown reasons (possibly because workplace injury, depression, and other hazards are more common in a population that works - males). Another possibility is the infection being less dangerous to females, again for unknown reasons. Knowing the cases' employment status might be beneficial to pinning down the cause of these correlations.  
